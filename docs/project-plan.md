@@ -87,15 +87,24 @@ easycode/
 │   │       ├── policy.ts       # 危险命令模式匹配
 │   │       └── sandbox.ts      # 沙箱执行（未来扩展）
 │   ├── ai/
-│   │   ├── provider.ts         # streamFn 抽象接口
-│   │   ├── openai.ts           # OpenAI 实现
-│   │   ├── anthropic.ts        # Anthropic 实现
-│   │   └── deepseek.ts         # Deepseek 实现
+│   │   ├── src/
+│   │   │   ├── types.ts            # 核心类型（Message、ToolDefinition、StreamDelta、StreamFn）
+│   │   │   ├── config.ts           # 配置管理器（读写 ~/.easycode/config.json）
+│   │   │   ├── factory.ts          # Provider 工厂（createStreamFn("deepseek/deepseek-chat")）
+│   │   │   ├── providers/
+│   │   │   │   ├── openai.ts       # OpenAI Provider（流式）
+│   │   │   │   ├── anthropic.ts    # Anthropic Provider（流式）
+│   │   │   │   └── deepseek.ts     # Deepseek Provider（OpenAI 兼容，复用 openai SDK）
+│   │   │   └── index.ts            # 公开导出
+│   │   └── package.json
 │   ├── mcp/
 │   │   ├── client.ts           # MCP Client
 │   │   └── tool-bridge.ts      # MCP 工具 → EasyCode 工具适配
 │   └── cli/
 │       ├── index.ts            # 入口，Commander.js 命令注册
+│       ├── setup/
+│       │   ├── wizard.ts       # 首次运行引导（readline 交互，检测→选 Provider→输入 Key→验证→保存）
+│       │   └── validator.ts    # API Key 有效性验证（发一次最小请求测试连通性）
 │       ├── ui/
 │       │   ├── chat.tsx        # Ink 对话界面
 │       │   ├── approval.tsx    # 交互式审批 UI
@@ -103,7 +112,9 @@ easycode/
 │       └── commands/
 │           ├── run.ts          # easycode <prompt>
 │           ├── resume.ts       # easycode resume <id>
-│           └── stats.ts        # easycode stats <id>
+│           ├── stats.ts        # easycode stats <id>
+│           ├── setup.ts        # easycode setup（手动触发引导）
+│           └── config.ts       # easycode config（查看/修改配置）
 ├── docs/
 │   └── project-plan.md         # 本文档
 ├── package.json
@@ -123,10 +134,152 @@ easycode/
 
 **产出物**：
 
-- [ ] **M1.1** `packages/ai/` — LLM 提供者抽象
-  - 定义 `StreamFn` 接口：`(messages, tools) => AsyncIterable<Delta>`
-  - 实现 OpenAI Provider（基于 `openai` npm 包）
-  - 支持流式输出（streaming）
+- [ ] **M1.1** `packages/ai/` — LLM 提供者抽象 + API Key 管理
+
+  #### 设计要点：打包后用户如何管理自己的 API Key？
+
+  **核心思路**：API Key 不放在代码里、不放在 `.env`（打包后用户看不到），而是存储在用户主目录的配置文件 `~/.easycode/config.json` 中，与程序本体完全分离。
+
+  **配置文件位置与结构**：
+  ```
+  Windows: C:\Users\<用户名>\.easycode\config.json
+  macOS/Linux: ~/.easycode/config.json
+  ```
+  ```json
+  {
+    "version": 1,
+    "defaultModel": "deepseek/deepseek-chat",
+    "approvalPolicy": "ask",
+    "compactionThreshold": 0.8,
+    "providers": {
+      "openai": {
+        "apiKey": "sk-...",
+        "baseUrl": "https://api.openai.com/v1"
+      },
+      "anthropic": {
+        "apiKey": "sk-ant-..."
+      },
+      "deepseek": {
+        "apiKey": "sk-...",
+        "baseUrl": "https://api.deepseek.com/v1"
+      }
+    }
+  }
+  ```
+
+  #### 首次运行引导（Setup Wizard）
+
+  **触发条件**：每次 `easycode <任何命令>` 启动时，先检测是否存在有效 API Key。未配置则自动进入引导，无需用户手动运行 `easycode setup`。
+
+  **CLI 交互流程**：
+  ```
+  ╔══════════════════════════════════════════╗
+  ║   Welcome to EasyCode! 🎉               ║
+  ║   需要先配置一个 LLM Provider 才能使用。  ║
+  ╚══════════════════════════════════════════╝
+
+  ? 选择 LLM Provider：
+    ❯ Deepseek（推荐，价格最低，适合开发调试）
+      OpenAI（GPT-4o 系列）
+      Anthropic（Claude 系列）
+
+  ? 请输入 Deepseek API Key（输入时不显示）：
+    ›  ****************************
+
+  ⠋ 正在验证 API Key...
+  ✓ 连接成功！模型：deepseek-chat
+
+  ? 设为默认模型？(Y/n) Y
+
+  ✓ 配置已保存到 ~/.easycode/config.json
+  ✓ 现在可以开始使用 EasyCode 了！
+  ```
+
+  #### API Key 管理命令
+
+  打包发布后，用户通过 CLI 命令管理自己的配置，不需要触碰任何代码：
+
+  ```bash
+  # 查看当前配置（API Key 脱敏显示，只显示前4位和后4位）
+  easycode config list
+
+  # 输出示例：
+  # Provider     Model                    API Key          状态
+  # ─────────────────────────────────────────────────────────
+  # deepseek   deepseek-chat (默认)     sk-xx****xxxx    ✓ 已验证
+  # openai     -                        未配置            -
+
+  # 添加或更新某个 Provider 的 Key（交互式输入，输入时隐藏）
+  easycode config set-key openai
+  easycode config set-key deepseek
+
+  # 切换默认模型
+  easycode config set-model openai/gpt-4o
+  easycode config set-model deepseek/deepseek-chat
+
+  # 修改审批策略
+  easycode config set-approval ask|auto|never
+
+  # 删除某 Provider 的 Key
+  easycode config remove-key openai
+
+  # 重新运行完整引导向导
+  easycode setup
+  ```
+
+  #### 技术实现
+
+  - [ ] **M1.1.1** `packages/ai/src/types.ts` — 核心类型定义
+    ```typescript
+    // LLM 消息格式（统一内部表示）
+    type Message = { role: 'system'|'user'|'assistant'|'tool'; content: string | ContentBlock[] }
+
+    // 工具定义（供 LLM 调用）
+    type ToolDefinition = { name: string; description: string; parameters: JSONSchema; concurrency: 'readonly'|'write'|'exclusive' }
+
+    // 流式输出 Delta（Agent Loop 消费的统一格式）
+    type StreamDelta =
+      | { type: 'text_delta';       content: string }
+      | { type: 'tool_call_start';  callId: string; name: string }
+      | { type: 'tool_call_delta';  callId: string; argumentsDelta: string }
+      | { type: 'tool_call_end';    callId: string }
+      | { type: 'usage';            inputTokens: number; outputTokens: number; cacheReadTokens?: number }
+      | { type: 'done';             stopReason: 'end_turn'|'tool_use'|'max_tokens' }
+      | { type: 'error';            message: string }
+
+    // 核心抽象：一个返回 AsyncIterable 的函数，Agent Loop 只依赖这个接口
+    type StreamFn = (messages: Message[], tools: ToolDefinition[], opts?: StreamOptions) => AsyncIterable<StreamDelta>
+    ```
+
+  - [ ] **M1.1.2** `packages/ai/src/config.ts` — 配置管理器
+    - 读写 `~/.easycode/config.json`（不存在则自动创建目录）
+    - `EasycodeConfig.getApiKey(provider)` / `setApiKey(provider, key)` / `removeApiKey(provider)`
+    - `EasycodeConfig.getDefaultModel()` / `setDefaultModel(model)`
+    - API Key 脱敏工具函数（`sk-ab12****5678`，展示时用）
+
+  - [ ] **M1.1.3** `packages/ai/src/providers/` — 三个 Provider 实现
+    - **OpenAI**：使用 `openai` npm 包，支持流式 `chat.completions.create({ stream: true })`
+    - **Deepseek**：复用 `openai` SDK，仅覆盖 `baseURL: 'https://api.deepseek.com/v1'`（Deepseek 接口完全兼容 OpenAI）
+    - **Anthropic**：使用 `@anthropic-ai/sdk`，对接 `messages.stream()`，将 Anthropic 事件格式转换为统一 `StreamDelta`
+    - 每个 Provider 将各自的流式格式**归一化**为统一 `StreamDelta`，Agent Loop 无需感知底层差异
+
+  - [ ] **M1.1.4** `packages/ai/src/factory.ts` — Provider 工厂
+    ```typescript
+    // 根据 "provider/model" 字符串创建对应的 StreamFn，Key 自动从 config 读取
+    createStreamFn("deepseek/deepseek-chat")  // → DeepseekProvider
+    createStreamFn("openai/gpt-4o")           // → OpenAIProvider
+    createStreamFn("anthropic/claude-3-5-sonnet-20241022") // → AnthropicProvider
+    ```
+
+  - [ ] **M1.1.5** `packages/cli/src/setup/wizard.ts` — 首次运行引导
+    - 用 Node.js 内置 `readline` 实现交互式问答（无额外依赖）
+    - 密码输入模式：输入时隐藏字符（`process.stdout.write('\r\033[K')` + 监听原始按键）
+    - 引导结束后调用 `validator.ts` 发一次最小测试请求验证 Key 有效性
+
+  - [ ] **M1.1.6** `packages/cli/src/setup/validator.ts` — Key 有效性验证
+    - 每个 Provider 各有一个轻量验证请求（OpenAI: `models.list`；Deepseek/Anthropic: 发一条 1 token 的消息）
+    - 区分错误类型：`invalid_key`（401）/ `quota_exceeded`（429/402）/ `network_error`（timeout）
+    - 给用户清晰的错误提示，不直接抛裸错误
 
 - [ ] **M1.2** `packages/core/tools/` — 内置工具集
   - `read_file(path)` — 读取文件内容
