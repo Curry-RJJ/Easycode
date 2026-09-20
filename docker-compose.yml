@@ -1,0 +1,90 @@
+version: "3.9"
+
+# ============================================================
+# EasyCode — Docker Compose 配置
+# 用途：本地开发、测试、演示
+# ============================================================
+
+services:
+
+  # ── 开发环境（热重载，挂载源码）──────────────────────────
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: easycode-dev
+    volumes:
+      # 源码实时同步（热重载）
+      - .:/app
+      # node_modules 隔离，避免 Windows/Linux 路径问题
+      - /app/node_modules
+      - /app/packages/core/node_modules
+      - /app/packages/ai/node_modules
+      - /app/packages/mcp/node_modules
+      - /app/packages/cli/node_modules
+      # 会话数据持久化
+      - easycode-sessions:/root/.easycode
+      # 挂载演示项目
+      - ./demo:/workspace
+    environment:
+      - NODE_ENV=development
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - EASYCODE_LOG_LEVEL=${EASYCODE_LOG_LEVEL:-info}
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    networks:
+      - easycode-net
+
+  # ── 生产环境（构建产物，最小镜像）───────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: easycode-app
+    volumes:
+      - easycode-sessions:/root/.easycode
+      - ./demo:/workspace
+    environment:
+      - NODE_ENV=production
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    networks:
+      - easycode-net
+    profiles:
+      - prod
+
+  # ── 测试环境（CI/CD 用）─────────────────────────────────
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: easycode-test
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=test
+      - OPENAI_API_KEY=sk-test-mock
+    command: ["npm", "test"]
+    networks:
+      - easycode-net
+    profiles:
+      - test
+
+# ── 持久化卷 ─────────────────────────────────────────────
+volumes:
+  easycode-sessions:
+    driver: local
+
+# ── 网络 ─────────────────────────────────────────────────
+networks:
+  easycode-net:
+    driver: bridge

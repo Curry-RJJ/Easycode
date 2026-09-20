@@ -1,0 +1,15 @@
+{
+  "name": "@easycode/ai",
+  "version": "0.1.0",
+  "description": "EasyCode AI — LLM provider abstraction (OpenAI, Anthropic, Deepseek)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "dev": "tsup src/index.ts --format esm --dts --watch"
+  },
+  "dependencies": {
+    "openai": "^4.52.0"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "@easycode/cli",
+  "version": "0.1.0",
+  "description": "EasyCode CLI — Terminal interface for the coding agent",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "easycode": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "dev": "tsup src/index.ts --format esm --watch"
+  },
+  "dependencies": {
+    "@easycode/core": "*",
+    "@easycode/ai": "*",
+    "@easycode/mcp": "*",
+    "commander": "^12.1.0",
+    "ink": "^5.0.1",
+    "react": "^18.3.1",
+    "chalk": "^5.3.0",
+    "dotenv": "^16.4.5",
+    "ora": "^8.1.0",
+    "cli-table3": "^0.6.5"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "@easycode/core",
+  "version": "0.1.0",
+  "description": "EasyCode core — Agent loop, tools, session, checkpoint, security",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "dev": "tsup src/index.ts --format esm --dts --watch"
+  },
+  "dependencies": {
+    "js-tiktoken": "^1.0.15"
+  }
+}

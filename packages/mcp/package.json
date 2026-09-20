@@ -1,0 +1,15 @@
+{
+  "name": "@easycode/mcp",
+  "version": "0.1.0",
+  "description": "EasyCode MCP — Model Context Protocol client",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "dev": "tsup src/index.ts --format esm --dts --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}

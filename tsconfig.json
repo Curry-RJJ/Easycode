@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "paths": {
+      "@easycode/core": ["./packages/core/src/index.ts"],
+      "@easycode/ai": ["./packages/ai/src/index.ts"],
+      "@easycode/mcp": ["./packages/mcp/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "**/dist"]
+}
