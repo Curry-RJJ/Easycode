@@ -4,6 +4,22 @@
 
 ---
 
+## 📖 给大模型的阅读指引
+
+**本文档是主执行方案**，每个里程碑的关键设计决策均标注了 `→ 参考` 指向调研资料。
+
+调研资料位于 `docs/research/`（本地，不进 git），共 10 个专题 MD 文件，索引见 [`docs/research/README.md`](./research/README.md)。
+
+**执行任务前的推荐阅读顺序**：
+1. 先读本文档对应里程碑的完整描述（包括验收标准）
+2. 再读该里程碑标注的 `→ 参考` 文件，了解三家开源项目的实现对比
+3. 按本文档的设计决策（第六章）编写代码，优先采纳推荐方案
+
+**项目根目录**：`D:\projects\Easycode`
+**代码仓库**：`https://github.com/Curry-RJJ/Easycode`
+
+---
+
 ## 一、背景与动机
 
 本项目源于对以下三个主流开源 Coding Agent 的深度调研：
@@ -131,6 +147,10 @@ easycode/
 ### 🔴 Milestone 1：MVP — 能跑起来的 Agent Loop
 
 **目标**：`easycode "帮我修复 src/auth.ts 的 bug"` 端到端跑通
+
+> 📚 **参考资料**：
+> - [`docs/research/01-架构对比.md`](./research/01-架构对比.md) — 三家 Agent 整体架构图，重点看图1（Pi 双层循环）和图2（Codex 多壳设计）
+> - [`docs/research/06-系统提示词与指令遵循.md`](./research/06-系统提示词与指令遵循.md) — 系统提示词拼装方式，EasyCode 采用 Pi 的"应用层纯函数拼装"思路
 
 **产出物**：
 
@@ -282,6 +302,8 @@ easycode/
     - 给用户清晰的错误提示，不直接抛裸错误
 
 - [ ] **M1.2** `packages/core/tools/` — 内置工具集
+  > 📚 **参考**：[`docs/research/04-工具调用.md`](./research/04-工具调用.md) — 三家默认工具集对比（Pi 8个/Codex 15个/DSH 全插件），EasyCode 采用 Pi 的"最小工作闭环"：读文件→改文件→跑命令验证
+
   - `read_file(path)` — 读取文件内容
   - `write_file(path, content)` — 全量写入
   - `edit_file(path, old_str, new_str)` — 搜索替换式编辑（参考 Pi 的 edit 工具）
@@ -290,6 +312,8 @@ easycode/
   - `search_files(pattern, path)` — grep 搜索
 
 - [ ] **M1.3** `packages/core/agent/` — Agent 类与双层 runLoop
+  > 📚 **参考**：[`docs/research/01-架构对比.md`](./research/01-架构对比.md) 图1 Pi 的 `runLoop` 实现，`packages/agent/src/agent-loop.ts`；[`docs/research/06-系统提示词与指令遵循.md`](./research/06-系统提示词与指令遵循.md) Pi 的 `buildSystemPrompt` 函数设计
+
   ```
   外层循环（follow-up）
   └─ 内层循环（tool 调用）
@@ -314,6 +338,10 @@ easycode/
 #### M2.1：事件溯源会话存储（Checkpoint 机制）
 
 **目标**：每次任务全程可追溯，进程崩溃后能断点续传
+
+> 📚 **参考资料**：
+> - [`docs/research/03-会话管理.md`](./research/03-会话管理.md) — 三家存储格式实物对比（Pi 树状JSONL / Codex 线性JSONL / DSH 事件JSONL），**EasyCode 采用 DSH 的事件 JSONL 格式**（最简洁，每行一个事件，seq 严格递增）
+> - [`docs/research/05-重连与容错.md`](./research/05-重连与容错.md) — 崩溃恢复机制对比，**EasyCode 采用 DSH 的"合成闭合事件"策略**（`interruptedTurnClosers` 函数逻辑），优于 Pi 的操作记录恢复和 Codex 的无专门处理
 
 **产出物**：
 
@@ -360,6 +388,10 @@ easycode/
 
 **目标**：同一个 LLM 响应中多个工具调用，安全并发执行
 
+> 📚 **参考资料**：
+> - [`docs/research/04-工具调用.md`](./research/04-工具调用.md) — DSH 的"五道瀑布"执行管线（`pre → guard → around → post → result`），工具并发通过 `waterfall` 中间件控制
+> - [`docs/research/07-思维链与工作流编排.md`](./research/07-思维链与工作流编排.md) — 只读并行/写入串行的编排逻辑，Codex 的 `ToolOrchestrator` 审批→沙箱→尝试→升级流程可参考
+
 **产出物**：
 
 - [ ] **M2.2.1** 工具标注（每个工具声明自己的并发属性）
@@ -396,6 +428,10 @@ easycode/
 
 **目标**：token 接近窗口上限时，自动压缩历史消息，保持 Agent 可持续运行
 
+> 📚 **参考资料**：
+> - [`docs/research/02-上下文管理.md`](./research/02-上下文管理.md) — **重点阅读**，三家上下文管理策略全对比。EasyCode 的压缩策略：保留 system prompt + 最近 N 轮（来自 Pi），压缩时用 LLM 生成摘要替换中间历史；Codex 的六条铁律（单项 <10K token 等）可作为扩展参考
+> - [`docs/research/08-性能设计与成本管理.md`](./research/08-性能设计与成本管理.md) — Pi 的 `UsageRecord`（cached/uncached 分列）设计，用于 token 计数统计
+
 **产出物**：
 
 - [ ] **M2.3.1** Token 计数（`packages/core/context/token.ts`）
@@ -425,6 +461,10 @@ easycode/
 #### M3.1：多层安全审批
 
 **目标**：参考 Codex 四层纵深，实现两层防线
+
+> 📚 **参考资料**：
+> - [`docs/research/10-安全与权限控制.md`](./research/10-安全与权限控制.md) — **重点阅读**，三家完整安全链路对比。EasyCode 实现 Codex 四层中的 L1（审批策略）+ L2（execpolicy 危险命令匹配），DSH 的"fail-closed + 提权引导"策略也值得参考
+> - 危险命令模式库参考：Pi 的 `NON_RETRYABLE_PROVIDER_LIMIT_ERROR_PATTERN` 模式库设计思路（`docs/research/05-重连与容错.md`）
 
 **产出物**：
 
@@ -473,6 +513,9 @@ easycode/
 
 **目标**：支持接入外部 MCP Server 提供的工具，实现工具动态扩展
 
+> 📚 **参考资料**：
+> - [`docs/research/09-可扩展性.md`](./research/09-可扩展性.md) — Codex 的 `mcp_resource`（read/list）和 plugin 包设计，DSH 的 `hooks-codex` 工具桥模式；**EasyCode MCP Client 参考 Codex 的 MCP 接入方式**（`@modelcontextprotocol/sdk` 标准 SDK）
+
 **产出物**：
 
 - [ ] **M3.2.1** MCP Client（`packages/mcp/client.ts`）
@@ -496,6 +539,9 @@ easycode/
 ---
 
 #### M3.3：可观测性 — 结构化日志与统计面板
+
+> 📚 **参考资料**：
+> - [`docs/research/08-性能设计与成本管理.md`](./research/08-性能设计与成本管理.md) — **重点阅读**，Pi 的 `UsageRecord + SessionStats` 累计设计（cached/uncached 分列）是 EasyCode token 统计的直接参考；Codex 的 `TokenBudgetConfig` 可作为预算控制扩展参考
 
 **产出物**：
 
@@ -548,6 +594,9 @@ easycode/
 
 #### M4.1：Plan 模式（先规划，再执行）
 
+> 📚 **参考资料**：
+> - [`docs/research/07-思维链与工作流编排.md`](./research/07-思维链与工作流编排.md) — Codex 的 `plan mode`（`handle_plan_segments` 禁 Write 段）和 `update_plan` 工具设计，DSH 的 `plan-mode` 插件；**EasyCode 参考 Codex 的两阶段设计**（规划阶段只读 → 用户确认 → 执行阶段解锁写操作）
+
 **产出物**：
 
 - [ ] **M4.1.1** Plan 模式实现
@@ -564,6 +613,10 @@ easycode/
 ---
 
 #### M4.2：Session Replay（效果评估）
+
+> 📚 **参考资料**：
+> - [`docs/research/05-重连与容错.md`](./research/05-重连与容错.md) — DSH 的事件重放机制（`interruptedTurnClosers` + 事件顺序还原），**EasyCode Replay 直接复用 M2.1 的 JSONL 重放逻辑**，按 `seq` 顺序还原每个事件
+> - [`docs/research/03-会话管理.md`](./research/03-会话管理.md) — 三家会话文件的 diff 对比，了解 git 信息与会话如何关联（Codex 的 SQLite 镜像设计）
 
 **产出物**：
 
@@ -667,3 +720,23 @@ easycode --mcp stdio:"npx @modelcontextprotocol/server-filesystem ." \
 | 四层审批纵深 | Codex | `safety.rs`, `execpolicy` |
 | MCP 工具桥 | Codex / DSH | `mcp_resource`, `hooks-codex` |
 | token 分列统计 | Pi | `UsageRecord`（cached/uncached 分列） |
+
+---
+
+## 九、参考资料完整索引
+
+> 所有调研文件存放于 `docs/research/`（本地，不进 git）。
+> 索引文件：[`docs/research/README.md`](./research/README.md)
+
+| 文件路径 | 主题 | 对应里程碑 |
+|---------|------|-----------|
+| [`docs/research/01-架构对比.md`](./research/01-架构对比.md) | Pi / Codex / DSH 整体架构图（ASCII 绘制） | M1.3 |
+| [`docs/research/02-上下文管理.md`](./research/02-上下文管理.md) | 三家 Context 结构实物对比（代码级） | M1.1 / M2.3 |
+| [`docs/research/03-会话管理.md`](./research/03-会话管理.md) | 三家 Session JSONL 存储格式逐行解读 | M2.1 |
+| [`docs/research/04-工具调用.md`](./research/04-工具调用.md) | 工具定义→调用消息→执行管线→结果消息全流程 | M1.2 / M2.2 |
+| [`docs/research/05-重连与容错.md`](./research/05-重连与容错.md) | 崩溃恢复机制 + 请求重试策略 | M2.1 / M4.2 |
+| [`docs/research/06-系统提示词与指令遵循.md`](./research/06-系统提示词与指令遵循.md) | 系统提示词拼装方式、AGENTS.md 注入 | M1.3 |
+| [`docs/research/07-思维链与工作流编排.md`](./research/07-思维链与工作流编排.md) | CoT 深度控制、Plan 模式、子代理树 | M2.2 / M4.1 |
+| [`docs/research/08-性能设计与成本管理.md`](./research/08-性能设计与成本管理.md) | Token 统计累计、KV Cache、成本计算 | M2.3 / M3.3 |
+| [`docs/research/09-可扩展性.md`](./research/09-可扩展性.md) | Extension 工厂 / hooks JSON / MCP 工具桥 | M3.2 |
+| [`docs/research/10-安全与权限控制.md`](./research/10-安全与权限控制.md) | 审批策略、沙箱矩阵、Guardian LLM | M3.1 |

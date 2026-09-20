@@ -33,6 +33,9 @@ desktop.ini
 coverage/
 .nyc_output/
 
+# ── 调研资料（本地参考，不进仓库）───────────────────────
+docs/research/
+
 # ── 日志 ─────────────────────────────────────────────
 *.log
 npm-debug.log*
