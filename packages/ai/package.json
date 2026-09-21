@@ -10,6 +10,7 @@
     "dev": "tsup src/index.ts --format esm --dts --watch"
   },
   "dependencies": {
-    "openai": "^4.52.0"
+    "@anthropic-ai/sdk": "^0.127.0",
+    "openai": "^4.104.0"
   }
 }

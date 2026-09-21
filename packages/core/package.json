@@ -10,6 +10,11 @@
     "dev": "tsup src/index.ts --format esm --dts --watch"
   },
   "dependencies": {
-    "js-tiktoken": "^1.0.15"
+    "@easycode/ai": "*",
+    "better-sqlite3": "^13.0.3",
+    "js-tiktoken": "^1.0.21"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0"
   }
 }
