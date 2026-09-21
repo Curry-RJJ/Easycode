@@ -5,8 +5,17 @@
  * 使用 Commander.js 注册所有子命令。
  */
 
+// 最先执行：自动检测并应用系统代理（Windows 注册表 / 环境变量）
+import { setupProxy } from './utils/proxy.js';
+const detectedProxy = setupProxy();
+if (detectedProxy) {
+  // 静默设置，不打扰用户；调试时可看到
+  process.env._EASYCODE_PROXY = detectedProxy;
+}
+
 import { Command } from 'commander';
 import { runCommand } from './commands/run.js';
+import { replCommand } from './commands/repl.js';
 import {
   configListCommand,
   configSetKeyCommand,
@@ -29,9 +38,8 @@ program
   .option('-m, --model <model>', '指定模型（格式：provider/model）')
   .action(async (prompt: string | undefined, opts: { model?: string }) => {
     if (!prompt) {
-      console.log('用法：easycode "<任务描述>"');
-      console.log('示例：easycode "读取 README.md 并统计行数"');
-      console.log('\n运行 easycode --help 查看所有命令。');
+      // 无参数 → 进入交互式 REPL 模式
+      await replCommand();
       return;
     }
     await runCommand(prompt, opts);
