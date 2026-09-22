@@ -161,7 +161,7 @@ easycode/
 
 
 
-### 🔴 Milestone 1：MVP — 能跑起来的 Agent Loop
+### ✅ Milestone 1：MVP — 能跑起来的 Agent Loop（已完成）
 
 **目标**：`easycode "帮我修复 src/auth.ts 的 bug"` 端到端跑通
 
@@ -325,12 +325,44 @@ easycode/
 
 - [x] **M1.4** `packages/cli/` — 基础 CLI
   - `easycode "<prompt>"` 启动单次任务
+  - `easycode`（无参数）进入**交互式 REPL 模式**（持续对话，类 Claude Code 体验）
   - 流式打印 LLM 输出
-  - 简单的工具执行日志（`[tool] read_file src/auth.ts`）
+  - 工具执行日志（`[工具] read_file ✓ (12ms)`）
+  - 每轮结束展示统计摘要（工具调用次数 / token 数 / 耗时）
+
+- [x] **M1.5** 交互式 REPL 模式（`packages/cli/src/commands/repl.ts`）
+  - `easycode` 直接启动，无需每次输入命令
+  - `readline` 持续读取用户输入，支持多轮连续对话
+  - `Ctrl+C` 中断当前任务，继续等待下一条指令
+  - `exit` / `quit` / `q` / `:q` 退出
+  - **对话框 UI**：每次输入前后各一条细横线，视觉上框住用户输入区域
+    ```
+    ──────────────────────────────────────────────────
+     > █                   ← 灰色背景高亮，标识当前输入行
+    ──────────────────────────────────────────────────
+    ```
+    - 实现要点：利用 `rl.prompt()` 同步返回的特性，在其之后立即追加下横线 + `readline.moveCursor` / `cursorTo` 回位，绕过 readline 内部 `clearScreenDown` 的干扰
+    - 用户输入行通过 ANSI 背景色泄漏（`\x1b[48;5;237m`）实现整行灰色高亮
+
+- [x] **M1.6** 系统代理自动检测（`packages/cli/src/utils/proxy.ts`）
+  - 读取环境变量 `HTTPS_PROXY` / `HTTP_PROXY` / `ALL_PROXY`
+  - Windows 注册表自动读取系统代理设置
+  - 通过 `undici ProxyAgent` 全局生效，所有 `fetch` 请求自动走代理
+
+- [x] **M1.7** `easycode config` 配置管理命令（`packages/cli/src/commands/config.ts`）
+  - `config list` — 查看当前配置，API Key 脱敏显示
+  - `config set-key <provider>` — 交互式添加/更新 API Key
+  - `config set-model <model>` — 切换默认模型
+  - `config set-approval <policy>` — 修改审批策略
+  - `config remove-key <provider>` — 删除指定 Provider 的 Key
 
 **验收标准**：
 
-> 运行 `easycode "读取 README.md 并统计行数"` → Agent 自动调用 `read_file` + `run_bash` → 输出正确结果
+> 1. 运行 `easycode "读取 README.md 并统计行数"` → Agent 自动调用 `read_file` + `run_bash` → 输出正确结果 ✅
+> 2. 运行 `easycode`（无参数）→ 进入交互模式，显示带上下横线的对话框 UI，可持续多轮对话 ✅
+> 3. 运行 `easycode config list` → 脱敏显示当前配置 ✅
+
+**M1 完成状态**：✅ 全部子任务通过，构建产物正常（`npm run build` 通过，`@easycode/cli` 已 npm link 可全局使用）
 
 ---
 
