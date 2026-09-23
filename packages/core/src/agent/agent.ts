@@ -16,11 +16,12 @@ import type { ToolRegistry } from '../tools/registry.js';
 import { runLoop, type AgentEvent } from './agent-loop.js';
 import type { ApprovalPolicy } from '../security/policy.js';
 import type { OnApprovalRequired } from '../security/approval.js';
+import { getCwd } from '../utils/cwd.js';
 
 // ─── 系统提示词 ─────────────────────────────────────────────────────────
 
 function buildSystemPrompt(): string {
-  const cwd = process.cwd();
+  const cwd = getCwd(); // F-01：使用持久 CWD，而非 process.cwd()
   const platform = os.platform();
   const now = new Date().toISOString();
 
