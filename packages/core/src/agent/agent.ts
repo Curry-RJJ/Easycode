@@ -10,46 +10,14 @@
  *   - model（用于确定上下文窗口大小）
  */
 
-import os from 'os';
 import type { Message, StreamFn, ToolDefinition } from '@easycode/ai';
 import type { ToolRegistry } from '../tools/registry.js';
 import { runLoop, type AgentEvent } from './agent-loop.js';
 import type { ApprovalPolicy } from '../security/policy.js';
 import type { OnApprovalRequired } from '../security/approval.js';
+import { buildSystemPrompt } from './system-prompt.js';
+import { loadProjectMemory } from '../context/project-memory.js';
 import { getCwd } from '../utils/cwd.js';
-
-// ─── 系统提示词 ─────────────────────────────────────────────────────────
-
-function buildSystemPrompt(): string {
-  const cwd = getCwd(); // F-01：使用持久 CWD，而非 process.cwd()
-  const platform = os.platform();
-  const now = new Date().toISOString();
-
-  return [
-    'You are EasyCode, an expert AI coding assistant operating in a terminal environment.',
-    '',
-    `Current working directory: ${cwd}`,
-    `Platform: ${platform}`,
-    `Current time: ${now}`,
-    '',
-    '## Your capabilities',
-    'You have access to the following tools to help users with coding tasks:',
-    '- read_file: Read file contents',
-    '- write_file: Create or overwrite files',
-    '- edit_file: Search-and-replace edit within a file (preferred for modifications)',
-    '- run_bash: Execute shell commands',
-    '- list_dir: List directory contents',
-    '- search_files: Search file contents with regex',
-    '',
-    '## Guidelines',
-    '1. Always read files before editing them to understand the current state.',
-    '2. Prefer edit_file over write_file for modifications to avoid overwriting unrelated content.',
-    '3. After making changes, verify with run_bash (e.g., run tests) when appropriate.',
-    '4. Be concise in explanations; show your work through tool calls rather than verbose text.',
-    '5. If a task is ambiguous, ask for clarification before proceeding.',
-    '6. Respond in the same language as the user.',
-  ].join('\n');
-}
 
 // ─── Agent 类 ─────────────────────────────────────────────────────────
 
@@ -57,9 +25,12 @@ export interface AgentOptions {
   streamFn: StreamFn;
   registry: ToolRegistry;
   maxTurns?: number;
+  /** 覆盖自动生成的系统提示词（一般不需要手动传，由 buildSystemPrompt 生成） */
   systemPrompt?: string;
   /** 模型标识（"provider/model" 格式），用于确定上下文窗口大小 */
   model?: string;
+  /** 项目根目录（默认 getCwd()），用于查找 CLAUDE.md / AGENTS.md */
+  projectRoot?: string;
   /** M2.3：是否启用上下文压缩（默认 false） */
   enableCompaction?: boolean;
   /** M2.3：压缩阈值 0-1（默认 0.8） */
@@ -88,8 +59,16 @@ export class Agent {
     this.streamFn = opts.streamFn;
     this.registry = opts.registry;
     this.maxTurns = opts.maxTurns ?? 50;
-    this.systemPrompt = opts.systemPrompt ?? buildSystemPrompt();
     this.model = opts.model ?? 'deepseek/deepseek-chat';
+
+    // F-02：系统提示词工程 — 使用结构化五段提示词 + CLAUDE.md 注入
+    if (opts.systemPrompt) {
+      this.systemPrompt = opts.systemPrompt;
+    } else {
+      const projectRoot = opts.projectRoot ?? getCwd();
+      const projectMemory = loadProjectMemory(projectRoot);
+      this.systemPrompt = buildSystemPrompt({ projectRoot, projectMemory });
+    }
     this.enableCompaction = opts.enableCompaction ?? false;
     this.compactionThreshold = opts.compactionThreshold ?? 0.8;
     this.keepRecentTurns = opts.keepRecentTurns ?? 3;

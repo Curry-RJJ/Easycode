@@ -28,6 +28,11 @@ export type {
   OnToolComplete,
 } from './tools/scheduler.js';
 
+// ─── F-02 系统提示词 + 项目记忆 ───────────────────────────────────────
+export { buildSystemPrompt } from './agent/system-prompt.js';
+export type { SystemPromptOptions } from './agent/system-prompt.js';
+export { loadProjectMemory } from './context/project-memory.js';
+
 // ─── M2.3 Token 计数与压缩 ─────────────────────────────────────────────
 export {
   estimateTokens,
