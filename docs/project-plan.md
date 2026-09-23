@@ -704,6 +704,68 @@ easycode/
 
 
 
+### 🟡 Milestone 5：生产落地优化（血肉计划）
+
+**目标**：将能通过 `npm run build` 的骨架，改造为在真实开发任务中**实际运作**的工具。
+
+> 详细方案与实现参考见 `docs/flesh-blood-plan.md`。
+> 参考基准：`D:\projects\claude-code`（claude-code）
+
+---
+
+#### P0 — 致命缺陷修复（先做这三项，其余免谈）
+
+- [x] **F-01** Bash spawn + 持久 CWD
+  **问题**：`execSync` 阻塞事件循环，无流式输出，CWD 每次重置。
+  **改造**：
+  - 新建 `packages/core/src/utils/cwd.ts` — 模块级持久 CWD 状态（getCwd / setCwd / resetCwd）
+  - 新建 `packages/core/src/utils/shell.ts` — spawn-based `execBash`：
+    - 非阻塞：spawn + stream，不锁死事件循环
+    - CWD 捕获：bash 用 `pwd > tempfile`，cmd.exe 用 batch 文件 + `cd > tempfile`
+    - `onProgress` 回调（每 1s 触发，2s 阈值后生效）
+    - 超时/AbortSignal → `killProcess`（Windows: `taskkill /f /t`，Unix: SIGTERM）
+    - Windows：优先 Git Bash，fallback cmd.exe（batch 文件 + ERRORLEVEL 传递）
+  - 修改 `packages/core/src/tools/handlers/bash.ts` — 替换 execSync，删除 working_dir 参数
+  - 修改 `packages/core/src/agent/agent.ts` — buildSystemPrompt 改用 getCwd() 反映实时目录
+  - 新建 `packages/core/src/tools/handlers/bash.test.ts` — 8 个单测（全部通过）
+  - **commit**: `b0eb249` | `vitest run` → 8 passed (8)
+
+- [ ] **F-02** 系统提示词工程
+  新建 `packages/core/src/agent/system-prompt.ts`，建立完整的 Identity / 行为准则 / 工具规范 / 安全边界四段结构
+
+- [ ] **F-03** FileRead 行数限制 + 行号显示
+  修改 `packages/core/src/tools/handlers/read.ts`：MAX_LINES=2000，行号前缀，二进制检测
+
+---
+
+#### P1 — 严重影响生产力
+
+- [ ] **F-04** FileEdit 容错匹配（空白 / 换行差异）
+- [ ] **F-05** 工具结果大小上限（溢写磁盘）
+- [ ] **F-06** max_tokens 截断恢复机制
+- [ ] **F-07** API 指数退避重试
+
+---
+
+#### P2 — 生产落地增强
+
+- [ ] **F-08** CLAUDE.md / AGENTS.md 自动注入
+- [ ] **F-09** Bash 实时进度展示（CLI UI 层）
+- [ ] **F-10** 权限白名单机制
+- [ ] **F-11** Git diff 追踪
+
+---
+
+#### P3 — 进阶增强
+
+- [ ] **F-12** Glob 文件搜索工具
+- [ ] **F-13** Plan 模式完整实现（升级 M4.1）
+- [ ] **F-14** 子 Agent 并行
+
+---
+
+
+
 ## 六、核心设计决策说明
 
 
