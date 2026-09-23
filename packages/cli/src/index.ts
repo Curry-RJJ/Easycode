@@ -2,20 +2,24 @@
 /**
  * @easycode/cli — EasyCode CLI 入口
  *
- * 使用 Commander.js 注册所有子命令。
+ * M3 新增：
+ *   --mcp <config>     接入 MCP Server（stdio/HTTP）
+ *   --approval <policy> 审批策略覆盖（ask/auto/never）
+ *   --log-format json  结构化 JSON 日志输出
+ *   stats <id>         Session 统计面板
  */
 
-// 最先执行：自动检测并应用系统代理（Windows 注册表 / 环境变量）
 import { setupProxy } from './utils/proxy.js';
 const detectedProxy = setupProxy();
 if (detectedProxy) {
-  // 静默设置，不打扰用户；调试时可看到
   process.env._EASYCODE_PROXY = detectedProxy;
 }
 
 import { Command } from 'commander';
 import { runCommand } from './commands/run.js';
 import { replCommand } from './commands/repl.js';
+import { resumeCommand, listCommand } from './commands/resume.js';
+import { statsCommand } from './commands/stats.js';
 import {
   configListCommand,
   configSetKeyCommand,
@@ -36,13 +40,42 @@ program
 program
   .argument('[prompt]', '要执行的任务描述（不提供时进入交互模式）')
   .option('-m, --model <model>', '指定模型（格式：provider/model）')
-  .action(async (prompt: string | undefined, opts: { model?: string }) => {
+  .option('--approval <policy>', '审批策略：ask（默认）| auto | never')
+  .option('--mcp <config>', '接入 MCP Server（格式：stdio:"cmd" 或 http://host）')
+  .option('--log-format <format>', '日志格式：text（默认）| json')
+  .action(async (
+    prompt: string | undefined,
+    opts: { model?: string; approval?: string; mcp?: string; logFormat?: string }
+  ) => {
     if (!prompt) {
-      // 无参数 → 进入交互式 REPL 模式
       await replCommand();
       return;
     }
     await runCommand(prompt, opts);
+  });
+
+// ─── easycode resume <id> ────────────────────────────────────────────
+program
+  .command('resume <session-id>')
+  .description('恢复中断的会话（断点续传）')
+  .action(async (sessionId: string) => {
+    await resumeCommand(sessionId);
+  });
+
+// ─── easycode list ────────────────────────────────────────────────────
+program
+  .command('list')
+  .description('查看历史会话列表（含状态：已完成 / 已中断）')
+  .action(async () => {
+    await listCommand();
+  });
+
+// ─── easycode stats <id> ─────────────────────────────────────────────
+program
+  .command('stats <session-id>')
+  .description('查看会话统计（token 用量、工具调用、费用估算）')
+  .action(async (sessionId: string) => {
+    await statsCommand(sessionId);
   });
 
 // ─── easycode setup ───────────────────────────────────────────────────

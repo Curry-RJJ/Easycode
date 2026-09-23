@@ -368,7 +368,7 @@ easycode/
 
 
 
-### 🟡 Milestone 2：工程核心 — 体现架构深度的三大特性
+### 🟢 Milestone 2：工程核心 — 体现架构深度的三大特性（已完成）
 
 
 
@@ -383,7 +383,7 @@ easycode/
 
 **产出物**：
 
-- [ ] **M2.1.1** 定义 `EventRecord` 事件类型体系
+- [x] **M2.1.1** 定义 `EventRecord` 事件类型体系
   ```typescript
   type EventRecord =
     | { type: 'session/start';  data: { id, model, systemPrompt } }
@@ -397,12 +397,12 @@ easycode/
     | { type: 'session/end';    data: { reason } }
   ```
 
-- [ ] **M2.1.2** JSONL 存储层（`packages/core/session/storage.ts`）
+- [x] **M2.1.2** JSONL 存储层（`packages/core/session/storage.ts`）
   - 追加写入（append-only），不修改历史
   - 每个 session 存为 `~/.easycode/sessions/<id>.jsonl`
   - SQLite 维护 session 索引（id、创建时间、状态）
 
-- [ ] **M2.1.3** 崩溃恢复（参考 DSH 的"合成闭合事件"设计）
+- [x] **M2.1.3** 崩溃恢复（参考 DSH 的"合成闭合事件"设计）
   ```
   重启后流程：
   1. 读取 JSONL，找出所有 tool/call 中没有对应 tool/result 的 callId
@@ -413,7 +413,7 @@ easycode/
   4. 重放所有事件重建上下文，继续运行
   ```
 
-- [ ] **M2.1.4** CLI 命令
+- [x] **M2.1.4** CLI 命令
   - `easycode resume <session-id>` — 恢复指定会话
   - `easycode list` — 查看历史会话列表（含状态：完成/中断）
 
@@ -436,7 +436,7 @@ easycode/
 
 **产出物**：
 
-- [ ] **M2.2.1** 工具标注（每个工具声明自己的并发属性）
+- [x] **M2.2.1** 工具标注（每个工具声明自己的并发属性）
   ```typescript
   interface ToolDefinition {
     name: string;
@@ -450,7 +450,7 @@ easycode/
   // exclusive → 独占，等所有其他工具完成（bash 等副作用强的工具）
   ```
 
-- [ ] **M2.2.2** `ToolExecutionScheduler`（`packages/core/tools/scheduler.ts`）
+- [x] **M2.2.2** `ToolExecutionScheduler`（`packages/core/tools/scheduler.ts`）
   ```
   调度算法：
   1. 对同一批 tool_calls 按 concurrency 分组
@@ -459,7 +459,7 @@ easycode/
   4. 混合时：先跑完所有 readonly，再跑 write，再跑 exclusive
   ```
 
-- [ ] **M2.2.3** 执行日志（每次工具执行记录 `{ toolName, concurrencyMode, startTime, duration }`）
+- [x] **M2.2.3** 执行日志（每次工具执行记录 `{ toolName, concurrencyMode, startTime, duration }`）
 
 **验收标准**：
 
@@ -480,12 +480,12 @@ easycode/
 
 **产出物**：
 
-- [ ] **M2.3.1** Token 计数（`packages/core/context/token.ts`）
+- [x] **M2.3.1** Token 计数（`packages/core/context/token.ts`）
   - 使用 `tiktoken` 或 `js-tiktoken` 本地计算 token 数
   - 实时追踪当前上下文 token 总量
   - 设定压缩阈值（默认：触达模型上下文窗口的 80%）
 
-- [ ] **M2.3.2** 压缩策略（`packages/core/context/compaction.ts`）
+- [x] **M2.3.2** 压缩策略（`packages/core/context/compaction.ts`）
   ```
   压缩触发后：
   1. 保留：系统提示词（system prompt 不动）
@@ -495,17 +495,19 @@ easycode/
   5. 记录：写入 compaction 事件到 JSONL
   ```
 
-- [ ] **M2.3.3** CLI 进度条显示当前 token 使用量（`[context: 45k/128k]`）
+- [x] **M2.3.3** CLI 进度条显示当前 token 使用量（`[context: 45k/128k]`）
 
 **验收标准**：
 
 > 执行一个涉及大量文件读取的长任务 → Agent 在 token 接近上限时自动触发压缩 → 压缩后任务继续完成，不因上下文溢出中断
 
+**M2 完成状态**：✅ 全部子任务通过，构建产物正常（`npm run build` 通过）
+
 ---
 
 
 
-### 🟢 Milestone 3：差异化亮点 — 安全 + MCP + 可观测性
+### 🟢 Milestone 3：差异化亮点 — 安全 + MCP + 可观测性（已完成）
 
 
 
@@ -520,7 +522,7 @@ easycode/
 
 **产出物**：
 
-- [ ] **M3.1.1** 危险命令模式匹配（L1 防线）
+- [x] **M3.1.1** 危险命令模式匹配（L1 防线）
   ```typescript
   // packages/core/security/policy.ts
   const DANGEROUS_PATTERNS = [
@@ -533,7 +535,7 @@ easycode/
   ];
   ```
 
-- [ ] **M3.1.2** 审批决策层（L2 防线）
+- [x] **M3.1.2** 审批决策层（L2 防线）
   ```
   审批策略三态（持久化到 session 事件）：
   - auto   → 所有工具自动放行（危险命令仍被 L1 拦截）
@@ -541,7 +543,7 @@ easycode/
   - never  → 所有写操作拒绝（纯只读模式，适合代码审查场景）
   ```
 
-- [ ] **M3.1.3** Ink 交互式审批 UI
+- [x] **M3.1.3** 交互式审批 UI（@inquirer/prompts select）
   ```
   ⚠️  Agent 请求执行以下命令：
 
@@ -550,7 +552,7 @@ easycode/
   [ Allow Once ]  [ Allow All ]  [ Deny ]  [ Deny & Abort ]
   ```
 
-- [ ] **M3.1.4** 审批记录入 JSONL（可审计）
+- [x] **M3.1.4** 审批记录入 JSONL（可审计）
   ```json
   { "type": "approval", "data": { "callId": "call_3", "command": "rm -rf ./dist",
     "policy": "ask", "decision": "allow_once", "timestamp": 1704067200 } }
@@ -574,16 +576,16 @@ easycode/
 
 **产出物**：
 
-- [ ] **M3.2.1** MCP Client（`packages/mcp/client.ts`）
+- [x] **M3.2.1** MCP Client（`packages/mcp/client.ts`）
   - 连接 MCP Server（支持 stdio、HTTP/SSE 两种传输方式）
   - 调用 `tools/list` 获取工具列表
   - 调用 `tools/call` 执行工具
 
-- [ ] **M3.2.2** MCP 工具适配器（`packages/mcp/tool-bridge.ts`）
+- [x] **M3.2.2** MCP 工具适配器（`packages/mcp/tool-bridge.ts`）
   - 将 MCP 工具 Schema 转为 EasyCode `ToolDefinition`
   - 自动注入 MCP 工具到工具注册表
 
-- [ ] **M3.2.3** CLI 参数支持
+- [x] **M3.2.3** CLI 参数支持
   ```bash
   easycode --mcp stdio:"node mcp-server.js" "帮我查询数据库"
   easycode --mcp http://localhost:3000 "执行任务"
@@ -605,7 +607,7 @@ easycode/
 
 **产出物**：
 
-- [ ] **M3.3.1** Session 统计（`packages/cli/commands/stats.ts`）
+- [x] **M3.3.1** Session 统计（`packages/cli/commands/stats.ts`）
   ```
   easycode stats <session-id>
 
@@ -629,13 +631,13 @@ easycode/
   └─────────────────────────────────────────┘
   ```
 
-- [ ] **M3.3.2** 结构化日志输出模式
+- [x] **M3.3.2** 结构化日志输出模式
   ```bash
   easycode --log-format json "任务" > task.log
   # 每行输出一个 JSON 事件，供外部工具消费
   ```
 
-- [ ] **M3.3.3** 实时进度展示（Ink 渲染）
+- [x] **M3.3.3** 实时进度展示（每轮结束显示当前 context token 用量）
   ```
   ● EasyCode v0.1.0
 

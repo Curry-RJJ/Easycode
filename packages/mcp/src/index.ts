@@ -1,3 +1,7 @@
-// @easycode/mcp — MCP protocol client
-// 实现将在 M3.2 中逐步完成
-export {};
+/**
+ * @easycode/mcp — MCP 协议客户端
+ */
+
+export { EasycodeMcpClient, parseMcpArg } from './client.js';
+export type { McpToolInfo, McpTransportConfig } from './client.js';
+export { bridgeMcpTool, loadMcpTools } from './tool-bridge.js';
