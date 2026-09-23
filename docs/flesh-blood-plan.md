@@ -43,7 +43,7 @@
 
 ## 一、P0 — 致命缺陷修复（先做这三项，其余免谈）
 
-- [ ] **F-01：Bash 工具重写 — spawn + 持久 Shell Session**
+- [x] **F-01：Bash 工具重写 — spawn + 持久 Shell Session**
 
 **现状问题**：
 
@@ -140,6 +140,18 @@ export async function execBash(
 - `cd /tmp && pwd` 后，下一次 `ls` 列出 `/tmp` 内容
 - `npm install`（10~60 秒）期间每 2 秒打印最后一行输出
 - Ctrl+C 能真正杀死子进程
+
+**✅ 完成记录（commit: b0eb249）**：
+- 新建 `packages/core/src/utils/cwd.ts` — 模块级持久 CWD 状态（getCwd / setCwd / resetCwd）
+- 新建 `packages/core/src/utils/shell.ts` — spawn-based `execBash`：
+  - 非阻塞：spawn + stream，不锁死事件循环
+  - CWD 捕获：bash 用 `pwd > tempfile`，cmd.exe 用 batch 文件 + `cd > tempfile`
+  - `onProgress` 回调（每 1s 触发，2s 阈值后生效）
+  - 超时 / AbortSignal → `killProcess`（Windows: `taskkill /f /t`，Unix: SIGTERM）
+  - Windows：优先 Git Bash，fallback cmd.exe（batch 文件 + ERRORLEVEL 传递）
+- 修改 `packages/core/src/tools/handlers/bash.ts` — 替换 execSync，删除 working_dir 参数，进度写 stderr
+- 修改 `packages/core/src/agent/agent.ts` — buildSystemPrompt 改用 getCwd()
+- 测试：8 个单测全部通过（vitest run → 8 passed）
 
 ---
 
