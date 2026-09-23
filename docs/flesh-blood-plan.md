@@ -14,28 +14,36 @@
 
 ## 读前须知：差距全景图
 
-| 缺陷等级 | 缺陷项 | 具体症状 | CC 参考路径 |
-|---------|--------|----------|------------|
-| 🔴 P0 致命 | Bash 用 `execSync` | 长命令阻塞整个进程，无流式输出，无 CWD 持久 | `BashTool.tsx:exec()` |
-| 🔴 P0 致命 | 系统提示词完全缺失 | 模型不知道工具怎么用，不知道输出格式，行为飘忽 | `BashTool/prompt.ts` |
-| 🔴 P0 致命 | FileRead 无行数/大小限制 | 读 100K 行文件直接 OOM，上下文秒满 | `FileReadTool.ts` |
-| 🟠 P1 严重 | FileEdit 精确字符匹配 | 模型生成的 old_str 有一个空格不同就失败 | `FileEditTool/utils.ts` |
-| 🟠 P1 严重 | CWD 不追踪 | `cd src && ls` 后下次 bash 回到初始目录 | `BashTool/src/utils/cwd.ts` |
-| 🟠 P1 严重 | 工具结果无大小上限 | 大文件内容全量进入消息数组，context 秒爆 | `toolResultStorage.ts` |
-| 🟠 P1 严重 | max_tokens 无恢复机制 | LLM 截断时直接失败，任务中断 | `query.ts:1510` |
-| 🟡 P2 重要 | API 无重试/退避 | 限速 429 / 网络抖动直接报错退出 | `services/api/withRetry.ts` |
-| 🟡 P2 重要 | 无 CLAUDE.md/AGENTS.md 注入 | 无法感知项目上下文和记忆 | `utils/attachments.ts` |
-| 🟡 P2 重要 | Bash 无实时进度 | 用户盯着空白等几分钟不知道是否卡死 | `BashTool/UI.tsx` |
-| 🟡 P2 重要 | 权限系统无白名单 | 只有黑名单正则，合法命令也容易被误拦 | `bashPermissions.ts` |
-| 🟢 P3 增强 | 无 Git diff 追踪 | 不知道改了哪些文件，无法 rollback | `utils/gitDiff.ts` |
-| 🟢 P3 增强 | 无多文件批量读取工具 | 没有 glob/find 语义工具，靠 bash 补偿 | `GlobTool.ts` |
-| 🟢 P3 增强 | 子 Agent 未实现 | M4 Plan 模式 / 并行任务执行 | `AgentTool.tsx` |
+| 缺陷等级 | 编号 | 缺陷项 | 具体症状 | CC 参考路径 |
+|---------|------|--------|----------|------------|
+| 🔴 P0 致命 | F-01 | Bash 用 `execSync` | 长命令阻塞整个进程，无流式输出，无 CWD 持久 | `BashTool.tsx:exec()` |
+| 🔴 P0 致命 | F-02 | 系统提示词完全缺失 | 模型不知道工具怎么用，不知道输出格式，行为飘忽 | `BashTool/prompt.ts` |
+| 🔴 P0 致命 | F-03 | FileRead 无行数/大小限制 | 读 100K 行文件直接 OOM，上下文秒满 | `FileReadTool.ts` |
+| 🟠 P1 严重 | F-04 | FileEdit 精确字符匹配 | 模型生成的 old_str 有一个空格不同就失败 | `FileEditTool/utils.ts` |
+| 🟠 P1 严重 | F-05 | CWD 不追踪 | `cd src && ls` 后下次 bash 回到初始目录 | `BashTool/src/utils/cwd.ts` |
+| 🟠 P1 严重 | F-06 | 工具结果无大小上限 | 大文件内容全量进入消息数组，context 秒爆 | `toolResultStorage.ts` |
+| 🟠 P1 严重 | F-07 | max_tokens 无恢复机制 | LLM 截断时直接失败，任务中断 | `query.ts:1510` |
+| 🟡 P2 重要 | F-08 | API 无重试/退避 | 限速 429 / 网络抖动直接报错退出 | `services/api/withRetry.ts` |
+| 🟡 P2 重要 | F-09 | 无 CLAUDE.md/AGENTS.md 注入 | 无法感知项目上下文和记忆 | `utils/attachments.ts` |
+| 🟡 P2 重要 | F-10 | Bash 无实时进度 | 用户盯着空白等几分钟不知道是否卡死 | `BashTool/UI.tsx` |
+| 🟡 P2 重要 | F-11 | 权限系统无白名单 | 只有黑名单正则，合法命令也容易被误拦 | `bashPermissions.ts` |
+| 🟢 P3 增强 | F-12 | 无 Git diff 追踪 | 不知道改了哪些文件，无法 rollback | `utils/gitDiff.ts` |
+| 🟢 P3 增强 | F-13 | 无多文件批量读取工具 | 没有 glob/find 语义工具，靠 bash 补偿 | `GlobTool.ts` |
+| 🟢 P3 增强 | F-14 | Plan 模式未实现 | 只能执行，不能先规划再确认 | `query.ts:permissionMode` |
+| 🟢 P3 增强 | F-15 | 子 Agent 未实现 | 并行子任务 / 多 Agent 协同 | `AgentTool.tsx` |
+| 🎨 UI 视觉 | U-01 | 颜色硬编码，无主题系统 | 浅色终端显示黑色气泡，完全不可读 | `src/utils/theme.ts` |
+| 🎨 UI 视觉 | U-02 | 无终端能力检测 | truecolor 颜色在老终端乱码显示 | `src/utils/systemTheme.ts` |
+| 🎨 UI 视觉 | U-03 | Spinner 静态无动画 | 用户不知道程序在运行还是已卡死 | `src/components/Spinner.tsx` |
+| 🎨 UI 视觉 | U-04 | CJK/ANSI 宽度计算错误 | 中文字符折行位置偏移，输出错位 | `src/utils/terminal.ts` |
+| 🎨 UI 视觉 | U-05 | 无 OSC 8 文件超链接 | 文件路径不可点击，无法快速跳转 | `src/utils/hyperlink.ts` |
+| 🎨 UI 视觉 | U-06 | Windows 终端无适配 | Braille 符号在 cmd 乱码，颜色失效 | `WindowsTerminalBackend.ts` |
+| 🎨 UI 视觉 | U-07 | diff 无彩色渲染 | 文件改动一片黑白，难以分辨增删 | `StructuredDiff/colorDiff.ts` |
 
 ---
 
 ## 一、P0 — 致命缺陷修复（先做这三项，其余免谈）
 
-### F-01：Bash 工具重写 — spawn + 持久 Shell Session
+- [ ] **F-01：Bash 工具重写 — spawn + 持久 Shell Session**
 
 **现状问题**：
 
@@ -135,7 +143,7 @@ export async function execBash(
 
 ---
 
-### F-02：系统提示词工程 — 从零到可用
+- [x] **F-02：系统提示词工程 — 从零到可用**
 
 **现状问题**：
 
@@ -255,9 +263,22 @@ export async function loadProjectContext(projectRoot: string): Promise<string> {
 - 对未知文件的任务，Agent 自动先 read_file 再决策
 - 危险命令触发审批弹出
 
+**✅ 完成记录（commit: 257d086）**：
+- 新建 `packages/core/src/agent/system-prompt.ts` — `buildSystemPrompt(opts)` 五段结构
+  1. Identity（EasyCode 身份 + CWD + platform + 时间）
+  2. Core Rules（先读后改、最小改动、验证、语言跟随用户）
+  3. Tool Guide（全部 6 个工具的 when/how/禁忌，英文指令 + 中文示例）
+  4. Project Context（CLAUDE.md 注入，可选）
+  5. Safety Rules（危险命令、secrets、不擅自提交）
+- 新建 `packages/core/src/context/project-memory.ts` — `loadProjectMemory()`
+  - 从启动目录向上遍历至 home，查找 CLAUDE.md / AGENTS.md / .easycode/context.md
+  - 子目录优先级高于父目录；单文件截断 10k chars
+- 修改 `packages/core/src/agent/agent.ts` — 删内联提示词，接 `buildSystemPrompt` + `loadProjectMemory`；新增 `projectRoot` 构造参数
+- 测试：12 个单测全部通过（vitest run → 20 passed 含 F-01 × 8）
+
 ---
 
-### F-03：FileRead 防 OOM — 行数限制 + 行号显示
+- [ ] **F-03：FileRead 防 OOM — 行数限制 + 行号显示**
 
 **现状问题**：
 
@@ -342,7 +363,7 @@ export const readFileTool: ToolDefinition = {
 
 ## 二、P1 — 严重影响生产力的缺陷
 
-### F-04：FileEdit 容错匹配 — 处理空白/换行差异
+- [ ] **F-04：FileEdit 容错匹配 — 处理空白/换行差异**
 
 **现状问题**：模型生成的 `old_str` 与实际文件内容有细微空格差异时，精确 `indexOf` 必然失败。
 
@@ -394,7 +415,7 @@ function findOldStr(fileContent: string, oldStr: string): string | null {
 
 ---
 
-### F-05：工具结果大小上限 — 防上下文爆炸
+- [ ] **F-05：工具结果大小上限 — 防上下文爆炸**
 
 **现状问题**：`run_bash` 执行 `find . -type f` 可能输出几万行，全量追加到消息数组。
 `read_file` 读大文件后整个内容留在上下文直到下次压缩。
@@ -432,7 +453,7 @@ export function truncateToolResult(result: ToolResult, maxChars: number): ToolRe
 
 ---
 
-### F-06：max_tokens 恢复机制 — 截断后继续
+- [ ] **F-06：max_tokens 恢复机制 — 截断后继续**
 
 **现状问题**：当 LLM 因为 `max_tokens` 限制输出被截断时，当前 runLoop 没有任何恢复，任务直接失败。
 
@@ -474,7 +495,7 @@ if (stopReason === 'max_tokens' && maxTokensRecoveryCount < 3) {
 
 ---
 
-### F-07：API 重试机制 — 指数退避
+- [ ] **F-07：API 重试机制 — 指数退避**
 
 **现状问题**：`packages/ai/src/providers/` 中所有 Provider 都没有重试逻辑，一次 429 直接向上抛错。
 
@@ -518,7 +539,7 @@ export async function* withRetry<T>(
 
 ## 三、P2 — 生产落地必备增强
 
-### F-08：CLAUDE.md / AGENTS.md 自动注入
+- [ ] **F-08：CLAUDE.md / AGENTS.md 自动注入**
 
 **功能描述**：在 Agent 启动时，自动查找项目根目录及父目录中的 `CLAUDE.md`、`AGENTS.md`，
 将内容注入系统提示词末尾，让模型了解项目规范、技术栈、禁忌操作等。
@@ -558,7 +579,7 @@ export async function loadProjectMemory(startDir: string): Promise<string[]> {
 
 ---
 
-### F-09：Bash 实时进度展示
+- [ ] **F-09：Bash 实时进度展示**
 
 **功能描述**：长时间运行的命令（如 `npm install`、`cargo build`）执行期间，
 每秒更新一行进度，显示最新的 stdout 内容，而不是让用户盯着空白等待。
@@ -587,7 +608,7 @@ CLI 层捕获后做实时重绘（`\r` 覆盖当前行）。
 
 ---
 
-### F-10：权限白名单机制 — 精细化审批
+- [ ] **F-10：权限白名单机制 — 精细化审批**
 
 **现状问题**：当前权限系统只有正则黑名单，没有白名单，也没有"对 `./dist` 目录操作不需审批"这类路径级别的放行规则。
 
@@ -633,7 +654,7 @@ export function checkToolApproval(
 
 ---
 
-### F-11：Git Diff 追踪 — 知道改了什么
+- [ ] **F-11：Git Diff 追踪 — 知道改了什么**
 
 **功能描述**：Agent 修改文件后，自动通过 `git diff` 展示变更摘要，让用户一眼看出改了什么。
 
@@ -671,7 +692,7 @@ export function getGitDiff(filePath: string): string | null {
 
 ## 四、P3 — 进阶增强（完成后可对标商业产品）
 
-### F-12：Glob 工具 — 模式搜索文件
+- [ ] **F-12：Glob 工具 — 模式搜索文件**
 
 **现状问题**：EC 没有 glob 语义工具，模型只能用 `run_bash find . -name "*.ts"` 代替，
 在 Windows 下不可靠，且浪费 bash 资源。
@@ -714,7 +735,7 @@ export const globTool: ToolDefinition = {
 
 ---
 
-### F-13：Plan 模式 — 先规划再执行
+- [ ] **F-13：Plan 模式 — 先规划再执行**
 
 **功能描述**：M4.1 的完整实现。在执行前先输出执行计划，用户确认后再开始写操作。
 
@@ -745,7 +766,7 @@ easycode --plan "重构 src/auth 模块的错误处理"
 
 ---
 
-### F-14：子 Agent — 并行任务分解
+- [ ] **F-14：子 Agent — 并行任务分解**
 
 **功能描述**：主 Agent 可以派生子 Agent 并行处理独立子任务（如同时修改 4 个模块）。
 
@@ -783,29 +804,35 @@ export const agentTool: ToolDefinition = {
 
 ## 五、执行优先级 & 里程碑
 
-```
-Week 1 — P0 血肉（没这三项不能演示）
-  F-01: Bash spawn + CWD 持久                    ← 最重要
-  F-02: 系统提示词工程                            ← 让模型知道自己是谁
-  F-03: FileRead 行数限制 + 行号显示               ← 防 OOM
+> F-xx（功能）与 U-xx（UI）按同一条时间线排列，实现时从上往下逐条推进即可。
 
-Week 2 — P1 生产能力
-  F-04: FileEdit 容错匹配（空白归一化）
-  F-05: 工具结果大小上限 + 磁盘溢写
-  F-06: max_tokens 恢复机制
-  F-07: API 指数退避重试
-
-Week 3 — P2 用户体验
-  F-08: CLAUDE.md/AGENTS.md 自动注入
-  F-09: Bash 实时进度展示
-  F-10: 权限白名单规则
-  F-11: Git diff 追踪
-
-Week 4 — P3 进阶特性
-  F-12: Glob 文件搜索工具
-  F-13: Plan 模式
-  F-14: 子 Agent 并行
-```
+| 顺序 | 编号 | 任务 | 预估时间 | 说明 |
+|------|------|------|---------|------|
+| **Week 1 — 先跑起来** | | | | |
+| 1 | F-01 | Bash spawn + CWD 持久 | 1天 | 最关键，其他全依赖它 |
+| 2 | F-02 | 系统提示词工程 | 半天 | 让模型知道自己是谁 |
+| 3 | F-03 | FileRead 行数限制 + 行号 | 半天 | 防 OOM |
+| 4 | U-02 | 终端能力检测 | 15分钟 | 防颜色乱码，顺手做 |
+| 5 | U-06 | Windows 终端兼容 | 2小时 | Braille 符号降级 |
+| **Week 2 — 生产可用** | | | | |
+| 6 | F-04 | FileEdit 容错匹配 | 半天 | 空白差异不再失败 |
+| 7 | F-05 | 工具结果大小上限 | 半天 | 大文件不爆 context |
+| 8 | F-06 | max_tokens 恢复机制 | 2小时 | 截断后继续 |
+| 9 | F-07 | API 指数退避重试 | 1小时 | 限速 429 不退出 |
+| 10 | U-01 | 主题系统（替换硬编码颜色）| 1天 | 浅色终端不再乱 |
+| 11 | U-03 | 动态 Spinner 动画 | 半天 | 用户知道在工作 |
+| **Week 3 — 体验打磨** | | | | |
+| 12 | F-08 | CLAUDE.md/AGENTS.md 注入 | 半天 | 感知项目上下文 |
+| 13 | F-09 | Bash 实时进度展示 | 半天 | 长命令不再盲等 |
+| 14 | F-10 | 权限白名单机制 | 半天 | 精细化审批 |
+| 15 | F-11 | Git diff 追踪 | 2小时 | 改了什么一目了然 |
+| 16 | U-04 | ANSI 安全渲染（CJK 宽度）| 半天 | 中文折行不错位 |
+| 17 | U-07 | Diff 彩色渲染 | 半天 | 增删行有颜色区分 |
+| **Week 4 — 进阶增强** | | | | |
+| 18 | F-12 | Glob 文件搜索工具 | 半天 | 跨平台文件查找 |
+| 19 | F-13 | Plan 模式 | 1天 | 先规划再执行 |
+| 20 | F-14 | 子 Agent 并行 | 2天 | 多任务协同 |
+| 21 | U-05 | OSC 8 文件超链接 | 1小时 | 路径可点击，锦上添花 |
 
 ---
 
@@ -876,7 +903,7 @@ easycode "清理所有日志文件"
 
 ---
 
-### U-01：主题系统 — 不同终端下的自适应配色
+- [ ] **U-01：主题系统 — 不同终端下的自适应配色**
 
 **现状问题**：
 
@@ -981,7 +1008,7 @@ const darkAnsiTheme: ThemeColors = {
 
 ---
 
-### U-02：终端能力检测 — 自动适配不同终端
+- [ ] **U-02：终端能力检测 — 自动适配不同终端**
 
 **CC 的检测体系**（参考 `D:\projects\claude-code\src\utils\systemTheme.ts` + `terminalSetup.tsx`）：
 
@@ -1066,7 +1093,7 @@ export function resolveTheme(caps: TerminalCaps): ThemeColors {
 
 ---
 
-### U-03：动态 Spinner — 闪烁动画 + 卡顿感知
+- [ ] **U-03：动态 Spinner — 闪烁动画 + 卡顿感知**
 
 **现状问题**：EC 的等待状态只有静态 `[工具] xxx ...`，用户看不出程序是否还在运行。
 
@@ -1153,7 +1180,7 @@ function computeShimmerSegments(verb: string, glimmerIndex: number) {
 
 ---
 
-### U-04：ANSI 安全渲染 — Unicode 宽度 + 内容截断
+- [ ] **U-04：ANSI 安全渲染 — Unicode 宽度 + 内容截断**
 
 **现状问题**：EC 直接用 `string.length` 做宽度计算，对 CJK（中文）字符和 ANSI 转义码的处理是错的。
 `🎉` 和 `A` 在代码里都是 1，但前者在终端里占 2 格。ANSI 转义码 `\x1b[31m` 有 5 个字符但显示宽度为 0。
@@ -1237,7 +1264,7 @@ export function truncateForDisplay(content: string, columns: number, maxLines = 
 
 ---
 
-### U-05：OSC 8 超链接 — 文件路径可点击
+- [ ] **U-05：OSC 8 超链接 — 文件路径可点击**
 
 **CC 的做法**（参考 `D:\projects\claude-code\src\utils\hyperlink.ts`）：
 
@@ -1296,7 +1323,7 @@ return {
 
 ---
 
-### U-06：Windows 兼容 — PowerShell / Windows Terminal
+- [ ] **U-06：Windows 兼容 — PowerShell / Windows Terminal**
 
 **现状问题**：EC 在 Windows PowerShell 里运行时可能遇到：
 - `⠋` Braille 符号不渲染（PowerShell 默认 Code Page 936）
@@ -1340,7 +1367,7 @@ export function getBrandChar(caps: TerminalCaps): string {
 
 ---
 
-### U-07：Diff 彩色渲染 — 让文件改动一目了然
+- [ ] **U-07：Diff 彩色渲染 — 让文件改动一目了然**
 
 **CC 的做法**（参考 `D:\projects\claude-code\src\components\StructuredDiff\colorDiff.ts`）：
 
@@ -1397,23 +1424,6 @@ export function renderWordDiff(oldLine: string, newLine: string): { old: string;
 - `D:\projects\claude-code\src\utils\theme.ts:36-42` — diffAdded/diffRemoved/diffAddedWord/diffRemovedWord 颜色定义
 
 ---
-
-### UI 改造优先级
-
-```
-立刻做（影响第一眼体验）：
-  U-02: 终端能力检测（防止颜色乱码）         ← 15分钟
-  U-01: 主题系统（替换硬编码颜色）           ← 1天
-  U-03: 动态 Spinner（让用户知道在工作）     ← 半天
-  U-06: Windows 兼容（符号降级）            ← 2小时
-
-次优先（显著提升体验）：
-  U-04: ANSI 安全渲染（防 CJK 宽度错乱）   ← 半天
-  U-07: Diff 彩色渲染（文件改动清晰）       ← 半天
-
-锦上添花：
-  U-05: OSC 8 超链接（文件路径可点击）      ← 1小时
-```
 
 ### UI 模块参考速查表
 
